@@ -1,25 +1,18 @@
 "use client";
 import { useState } from "react";
 import { FaUserEdit } from "react-icons/fa";
+import axios from "axios";
 
 function UpdateProfilePicture({ username }: { username: string }) {
   const [message, setMessage] = useState("");
 
   const handleUpdate = async () => {
-    const response = await fetch("/api/update-profile", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username }),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
+    try {
+      const response = await axios.patch("/api/update-profile", { username });
       setMessage(
-        `Upload your new profile image using this URL: ${data.uploadUrl}`
+        `Upload your new profile image using this URL: ${response.data.uploadUrl}`
       );
-    } else {
+    } catch (error) {
       setMessage("Failed to update profile image.");
     }
   };

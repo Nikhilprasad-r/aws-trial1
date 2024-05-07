@@ -1,18 +1,22 @@
 "use client";
 import { useEffect, useState } from "react";
+import axios from "axios";
+
 interface userData {
   username: string;
   profileImageUrl: string;
 }
+
 function UserProfile({ username }: { username: string }) {
   const [user, setUser] = useState<userData | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
-      const response = await fetch(`/api/users/${username}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
+      try {
+        const response = await axios.get(`/api/users/${username}`);
+        setUser(response.data.user);
+      } catch (error) {
+        setUser(null);
       }
     };
 
