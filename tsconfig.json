@@ -27,7 +27,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/app/api/update-profile/route.js",
-    "src/app/api/users/route.ts"
+    "src/app/api/signup/route.ts"
   ],
   "exclude": ["node_modules"]
 }

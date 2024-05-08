@@ -1,143 +1,265 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
+import { Formik, Form, Field, FormikHelpers } from "formik";
+import * as Yup from "yup";
+import { IoMdPersonAdd } from "react-icons/io";
+interface RegisterUserFormValues {
+  firstname: string;
+  lastname: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: string;
+  s3Path: string;
+  uploadUrl: string;
+  imageUrl: string;
+}
+const RegisterUserSchema = Yup.object().shape({
+  firstname: Yup.string()
+    .min(2, "Too Short!")
+    .max(50, "Too Long!")
+    .required("Required"),
+  lastname: Yup.string()
+    .min(2, "Too Short!")
+    .max(50, "Too Long!")
+    .required("Required"),
+  email: Yup.string().email("Invalid email").required("Required"),
+  phone: Yup.string()
+    .matches(/^\d{10}$/, "Invalid phone number")
+    .required("Required"),
+  password: Yup.string()
+    .min(8, "Password is too short - should be 8 chars minimum.")
+    .required("Password is required"),
+  role: Yup.string().required("Role is required"),
+});
 
 const RegisterUser: React.FC = () => {
-  const [username, setUsername] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [uploadUrl, setUploadUrl] = useState<string | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [s3Path, setS3Path] = useState<string | null>(null);
-  const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setUsername(event.target.value);
-  };
-
-  const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setPassword(event.target.value);
-  };
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    setFieldValue: FormikHelpers<RegisterUserFormValues>["setFieldValue"],
+    event: ChangeEvent<HTMLInputElement>
   ) => {
-    const selectedFile = event.target.files ? event.target.files[0] : null;
+    const selectedFile = event.currentTarget.files
+      ? event.currentTarget.files[0]
+      : null;
     setFile(selectedFile);
     if (selectedFile) {
-      const fileType = selectedFile.type;
+      setUploadedImageUrl(URL.createObjectURL(selectedFile));
       setIsLoading(true);
       try {
-        const response = await axios.get("/api/users/upload-url", {
-          headers: { "X-File-Type": encodeURIComponent(fileType) },
+        const response = await axios.get("/api/signup/upload-url", {
+          headers: { "X-File-Type": encodeURIComponent(selectedFile.type) },
         });
         const { s3Path, uploadUrl } = response.data;
-        console.log("Got upload URL:", s3Path);
-        setUploadUrl(uploadUrl);
-        setS3Path(s3Path);
-      } catch (error) {
-        alert(`Error getting upload URL: ${parseError(error)}`);
+        setFieldValue("s3Path", s3Path);
+        setFieldValue("uploadUrl", uploadUrl);
+      } catch (error: any) {
+        alert(`Error getting upload URL: ${error.message || error.toString()}`);
       } finally {
         setIsLoading(false);
       }
     }
   };
 
-  const handleUpload = async () => {
-    if (!file || !uploadUrl) {
-      alert("File not selected or upload URL not available.");
-      return;
-    }
-    console.log("Uploading with headers:", {
-      "Content-Type": file.type,
-    });
-    console.log("Upload URL:", uploadUrl);
+  const handleSubmit = async (values: RegisterUserFormValues) => {
     setIsLoading(true);
     try {
-      const response = await axios.put(uploadUrl, file);
-      console.log("Upload successful", response);
-      setUploadedImageUrl(uploadUrl.split("?")[0]);
-      alert("Image uploaded successfully");
-    } catch (error) {
-      console.error("Upload error", {});
-      alert(`Error uploading image: ${parseError(error)}`);
+      if (file && values.uploadUrl) {
+        await axios.put(values.uploadUrl, file, {
+          headers: { "Content-Type": file.type },
+        });
+        values.imageUrl = values.uploadUrl.split("?")[0];
+      }
+
+      await axios.post("/api/signup", values);
+      alert("User registered successfully!");
+    } catch (error: any) {
+      alert(`Error: ${error.message || error.toString()}`);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsLoading(true);
-    try {
-      await axios.post("/api/users", {
-        username,
-        password,
-        s3Path,
-      });
-      handleUpload();
-      alert("User created successfully!");
-    } catch (error) {
-      alert(`Error creating user: ${parseError(error)}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const parseError = (error: unknown): string => {
-    if (axios.isAxiosError(error)) {
-      return (
-        error.response?.data.message || "An error occurred during the request."
-      );
-    } else if (error instanceof Error) {
-      return error.message;
-    }
-    return "An unexpected error occurred.";
   };
 
   return (
-    <div className="flex flex-col">
-      <input
-        type="file"
-        onChange={handleFileChange}
-        required
-        accept=".png , .jpg, .jpeg"
-      />
-
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={username}
-          onChange={handleUsernameChange}
-          required
-          placeholder="Username"
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={handlePasswordChange}
-          required
-          placeholder="Password"
-        />
-        <button type="submit" disabled={isLoading}>
-          Create Account
-        </button>
-      </form>
-      {uploadedImageUrl && (
-        <div
-          style={{
-            width: "200px",
-            height: "220px",
-            overflow: "hidden",
-            marginTop: "10px",
-          }}
-        >
-          <img
-            src={uploadedImageUrl}
-            alt="Uploaded Image"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        </div>
-      )}
+    <div className="sm:ml-64 my-auto z-[1]">
+      <Formik
+        initialValues={{
+          firstname: "",
+          lastname: "",
+          email: "",
+          phone: "",
+          password: "",
+          role: "",
+          s3Path: "",
+          uploadUrl: "",
+          imageUrl: "",
+        }}
+        validationSchema={RegisterUserSchema}
+        onSubmit={handleSubmit}
+      >
+        {({ setFieldValue }) => (
+          <Form className="max-w-md mx-auto  bg-gray-700 p-5  rounded-lg">
+            <div className="flex items-center justify-center w-full mb-5">
+              {uploadedImageUrl ? (
+                <img
+                  src={uploadedImageUrl}
+                  alt="Uploaded Image"
+                  className="size-[100%] rounded-lg object-cover"
+                />
+              ) : (
+                <label
+                  htmlFor="file"
+                  className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg
+                      className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"
+                      aria-hidden="true"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 20 16"
+                    >
+                      <path
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
+                      />
+                    </svg>
+                    <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-semibold">Click to upload</span> or
+                      drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      SVG, PNG, JPG or GIF (MAX. 800x400px)
+                    </p>
+                  </div>
+                  <input
+                    id="file"
+                    name="file"
+                    type="file"
+                    className="hidden"
+                    onChange={(event) => handleFileChange(setFieldValue, event)}
+                  />
+                </label>
+              )}
+            </div>
+            <div className="relative z-0 w-full mb-5 group">
+              <Field
+                type="email"
+                name="email"
+                id="email"
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+                required
+              />
+              <label
+                htmlFor="email"
+                className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+              >
+                Email address
+              </label>
+            </div>
+            <div className="relative z-0 w-full mb-5 group">
+              <Field
+                type="password"
+                name="password"
+                id="password"
+                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                placeholder=" "
+                required
+              />
+              <label
+                htmlFor="password"
+                className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+              >
+                Password
+              </label>
+            </div>
+            <div className="grid md:grid-cols-2 md:gap-6">
+              <div className="relative z-0 w-full mb-5 group">
+                <Field
+                  type="text"
+                  name="firstname"
+                  id="firstname"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="firstname"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  First name
+                </label>
+              </div>
+              <div className="relative z-0 w-full mb-5 group">
+                <Field
+                  type="text"
+                  name="lastname"
+                  id="lastname"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="lastname"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Last name
+                </label>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 md:gap-6">
+              <div className="relative z-0 w-full mb-5 group">
+                <Field
+                  type="text"
+                  name="phone"
+                  id="phone"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+                  placeholder=" "
+                  required
+                />
+                <label
+                  htmlFor="phone"
+                  className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                >
+                  Phone number
+                </label>
+              </div>
+              <div className="relative z-0 w-full mb-5 group">
+                <label htmlFor="role" className="sr-only">
+                  Role
+                </label>
+                <Field
+                  as="select"
+                  id="role"
+                  name="role"
+                  className="block py-2.5 px-0 w-full text-sm text-gray-500 bg-transparent border-0 border-b-2 border-gray-200 appearance-none dark:text-gray-400 dark:border-gray-700 focus:outline-none focus:ring-0 focus:border-gray-200 peer"
+                >
+                  <option value="">Select a role</option> {/* Default option */}
+                  <option value="Software trainee">Software trainee</option>
+                  <option value="Backend developer">Backend Developer</option>
+                  <option value="Front End">Front End</option>
+                  <option value="Devops">Devops</option>
+                </Field>
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              disabled={isLoading}
+            >
+              <IoMdPersonAdd />
+            </button>
+          </Form>
+        )}
+      </Formik>
     </div>
   );
 };

@@ -1,16 +1,7 @@
-import AWS from "aws-sdk";
 import dbConnect from "../../lib/mongodb";
 import Usertest from "../../models/Usertest";
 import { NextRequest, NextResponse } from "next/server";
-
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
-});
-
-const s3 = new AWS.S3();
-const bucketName = process.env.AWS_S3_BUCKET;
+import { getUploadUrl } from "@/app/utils/s3imageupload";
 
 export async function PATCH(req) {
   try {
@@ -20,16 +11,7 @@ export async function PATCH(req) {
     if (!user) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
-
-    const params = {
-      Bucket: bucketName,
-      Key: user.s3Key,
-      Expires: 60 * 5,
-      ACL: "public-read",
-      ContentType: "image/jpeg",
-    };
-
-    const uploadUrl = s3.getSignedUrl("putObject", params);
+    const uploadUrl = getUploadUrl("image/jpeg", user.s3Key);
     return NextResponse.json(
       {
         uploadUrl,

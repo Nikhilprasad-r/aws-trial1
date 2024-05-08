@@ -14,7 +14,6 @@ export async function GET(req: NextApiRequest, res: NextApiResponse) {
   }
   try {
     const {uploadUrl,  s3Path } = await getUploadUrl(fileType);
-    console.log("Got upload URL:", s3Path);
    return NextResponse.json({uploadUrl:uploadUrl, s3Path: s3Path }, { status: 200 })
   } catch (error) {
     const message = parseError(error);

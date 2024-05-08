@@ -1,12 +1,13 @@
+import AdminPanel from "@/components/AdminPanel";
 import RegisterUser from "@/components/RegisterUser";
-import UpdateProfilePicture from "@/components/UpdateProfilePicture";
-import UserProfile from "@/components/UserProfile";
+import SidePanel from "@/components/SidePanel";
 
 export default function Home() {
   return (
     <div>
-      <UserProfile username="alice" />
-      <UpdateProfilePicture username="alice" />
+      <SidePanel />
+      <AdminPanel />
+      <RegisterUser />
     </div>
   );
 }
