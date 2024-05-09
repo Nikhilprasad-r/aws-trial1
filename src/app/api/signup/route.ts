@@ -1,43 +1,37 @@
 import dbConnect from "../../lib/mongodb";
 import Usertest from "../../models/Usertest";
 import { NextResponse } from "next/server";
+import parseError from "../../utils/errorParser";
+import { type NextRequest } from 'next/server';
 
-import { type NextRequest } from 'next/server'
+export async function POST(req: NextRequest, res: NextResponse) {
+  await dbConnect();
 
-
-
-export async function POST(req:NextRequest, res:NextResponse) {
   const body = await req.json();
-  const { firstname,
-    lastname,
-    email,
-    phone,
-    role,
-    password,
-    s3Path, } = body;
+  const { firstname, lastname, email, phone, role, password, s3Path, imageUrl } = body;
+
   try {
-    
-    await dbConnect();
+    const existingUser = await Usertest.findOne({ $or: [{ email }, { phone }] });
+    if (existingUser) {
+      return NextResponse.json({ error: 'User with this email or phone already exists.' }, { status: 409 });
+    }
+
     const newUser = new Usertest({
       firstname,
-        lastname,
-        email,
-        phone,
-        role,
-        password,
-        s3Path,
+      lastname,
+      email,
+      phone,
+      role,
+      password,
+      s3Path,
+      imageUrl,
     });
 
     await newUser.save();
-    return NextResponse.json({ userId: 123 }, { status: 201 })
+    return NextResponse.json({ message: 'User created successfully', userId: newUser._id }, { status: 201 });
   } catch (error) {
+    console.error('Failed to create user:', error);
     const message = parseError(error);
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-}
-function parseError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "An unknown error occurred";
 }

@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, required: true },
   password: { type: String, required: true },
   s3Path: String,
+  imageUrl: String,
 });
 
 userSchema.pre("save", async function (next) {

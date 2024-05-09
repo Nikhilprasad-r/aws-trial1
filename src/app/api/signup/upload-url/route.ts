@@ -2,6 +2,10 @@ import { getUploadUrl } from "../../../utils/s3imageupload";
 import { headers } from 'next/headers'
 import { NextApiRequest, NextApiResponse } from "next";
 import { NextResponse } from "next/server";
+import parseError from "../../../utils/errorParser";
+
+
+
 export async function GET(req: NextApiRequest, res: NextApiResponse) {
   
   const fileTypeencoded = headers().get('x-file-type')
@@ -19,10 +23,4 @@ export async function GET(req: NextApiRequest, res: NextApiResponse) {
     const message = parseError(error);
    return  NextResponse.json({ error: message }, { status: 500 })
   }
-}
-function parseError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "An unknown error occurred";
 }

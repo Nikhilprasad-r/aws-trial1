@@ -1,10 +1,19 @@
 "use client";
-import React, { useState, ChangeEvent, FormEvent } from "react";
+import React, {
+  useState,
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useContext,
+} from "react";
 import axios from "axios";
 import { Formik, Form, Field, FormikHelpers } from "formik";
 import * as Yup from "yup";
-import { IoMdPersonAdd } from "react-icons/io";
+import { IoMdPersonAdd, IoMdClose } from "react-icons/io";
+import { RiImageEditFill } from "react-icons/ri";
+import { UserContext } from "@/context/UserContext";
 interface RegisterUserFormValues {
+  _id: string;
   firstname: string;
   lastname: string;
   email: string;
@@ -13,6 +22,16 @@ interface RegisterUserFormValues {
   role: string;
   s3Path: string;
   uploadUrl: string;
+  imageUrl: string;
+}
+interface UserData {
+  _id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: string;
   imageUrl: string;
 }
 const RegisterUserSchema = Yup.object().shape({
@@ -38,7 +57,27 @@ const RegisterUser: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
+  const {
+    addUser,
+    editedUser,
+    setEditedUser,
+    setUsers,
+    isModalOpen,
+    setModalOpen,
+    users,
+  } = useContext(UserContext);
+  const initialValues: RegisterUserFormValues = {
+    firstname: editedUser?.firstname || "",
+    lastname: editedUser?.lastname || "",
+    email: editedUser?.email || "",
+    phone: editedUser?.phone || "",
+    password: "",
+    role: editedUser?.role || "",
+    s3Path: "",
+    uploadUrl: "",
+    imageUrl: editedUser?.imageUrl || "",
+    _id: editedUser?._id || "",
+  };
   const handleFileChange = async (
     setFieldValue: FormikHelpers<RegisterUserFormValues>["setFieldValue"],
     event: ChangeEvent<HTMLInputElement>
@@ -65,51 +104,79 @@ const RegisterUser: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (values: RegisterUserFormValues) => {
-    setIsLoading(true);
+  const handleSubmit = async (
+    values: RegisterUserFormValues,
+    { resetForm, setSubmitting }: FormikHelpers<RegisterUserFormValues>
+  ) => {
+    setSubmitting(true);
     try {
-      if (file && values.uploadUrl) {
-        await axios.put(values.uploadUrl, file, {
-          headers: { "Content-Type": file.type },
+      if (editedUser) {
+        await axios.put(`/api/users/${editedUser._id}`, values);
+        const updatedUsers = users.map((user) => {
+          if (user._id === editedUser._id) {
+            return values;
+          }
+          return user;
         });
-        values.imageUrl = values.uploadUrl.split("?")[0];
+        setUsers(updatedUsers);
+        setEditedUser(null);
+        setModalOpen(false);
+      } else {
+        if (file && values.uploadUrl) {
+          await axios.put(values.uploadUrl, file, {
+            headers: { "Content-Type": file.type },
+          });
+          values.imageUrl = values.uploadUrl.split("?")[0];
+        }
+        await axios.post("/api/signup", values);
+        addUser(values);
       }
+      alert("User saved successfully!");
 
-      await axios.post("/api/signup", values);
-      alert("User registered successfully!");
+      setModalOpen(false);
+      resetForm();
     } catch (error: any) {
       alert(`Error: ${error.message || error.toString()}`);
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="sm:ml-64 my-auto z-[1]">
+    <div className=" z-10">
       <Formik
-        initialValues={{
-          firstname: "",
-          lastname: "",
-          email: "",
-          phone: "",
-          password: "",
-          role: "",
-          s3Path: "",
-          uploadUrl: "",
-          imageUrl: "",
-        }}
+        initialValues={initialValues}
         validationSchema={RegisterUserSchema}
         onSubmit={handleSubmit}
       >
         {({ setFieldValue }) => (
           <Form className="max-w-md mx-auto  bg-gray-700 p-5  rounded-lg">
+            <div className="flex justify-end py-3 text-red-600 text-2xl">
+              <IoMdClose
+                onClick={() => {
+                  setEditedUser(null);
+                  setModalOpen(false);
+                }}
+              />
+            </div>
             <div className="flex items-center justify-center w-full mb-5">
-              {uploadedImageUrl ? (
-                <img
-                  src={uploadedImageUrl}
-                  alt="Uploaded Image"
-                  className="size-[100%] rounded-lg object-cover"
-                />
+              {uploadedImageUrl || editedUser?.imageUrl ? (
+                <div>
+                  <img
+                    src={uploadedImageUrl || editedUser?.imageUrl}
+                    alt="Uploaded Image"
+                    className="size-[100%] rounded-lg object-cover"
+                  />
+                  <div className="flex justify-end">
+                    <RiImageEditFill
+                      className="text-yellow-500 text-2xl"
+                      onClick={() => {
+                        setUploadedImageUrl(null);
+                        setFile(null);
+                      }}
+                    />
+                  </div>
+                </div>
               ) : (
                 <label
                   htmlFor="file"
@@ -125,9 +192,9 @@ const RegisterUser: React.FC = () => {
                     >
                       <path
                         stroke="currentColor"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
                         d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
                       />
                     </svg>
@@ -242,10 +309,10 @@ const RegisterUser: React.FC = () => {
                   name="role"
                   className="block py-2.5 px-0 w-full text-sm text-gray-500 bg-transparent border-0 border-b-2 border-gray-200 appearance-none dark:text-gray-400 dark:border-gray-700 focus:outline-none focus:ring-0 focus:border-gray-200 peer"
                 >
-                  <option value="">Select a role</option> {/* Default option */}
-                  <option value="Software trainee">Software trainee</option>
-                  <option value="Backend developer">Backend Developer</option>
-                  <option value="Front End">Front End</option>
+                  <option value="">Select a role</option>
+                  <option value="SoftwareTrainee">Software trainee</option>
+                  <option value="BackendDeveloper">Backend Developer</option>
+                  <option value="FrontEnd">Front End</option>
                   <option value="Devops">Devops</option>
                 </Field>
               </div>

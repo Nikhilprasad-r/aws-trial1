@@ -1,10 +1,10 @@
 import dbConnect from "@/app/lib/mongodb";
 import Usertest from "@/app/models/Usertest";
-import { NextApiRequest } from "next";
-import { NextResponse } from "next/server";
+import {  } from "next";
+import { NextRequest,NextResponse } from "next/server";
+import  parseError  from "../../utils/errorParser";
 
-
-export async function GET(req:NextApiRequest, res: NextResponse) {
+export async function GET(req:NextRequest, res: NextResponse) {
   try {
     await dbConnect();
     const users = await Usertest.find({});
@@ -15,9 +15,5 @@ export async function GET(req:NextApiRequest, res: NextResponse) {
   }
 }
 
-function parseError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return "An unknown error occurred";
-}
+
+
