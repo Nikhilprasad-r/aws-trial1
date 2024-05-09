@@ -9,8 +9,8 @@ const s3 = new AWS.S3({
 });
 const bucketName = process.env.AWS_S3_BUCKET;
 
-export async function getUploadUrl(fileType, path) {
-  const s3Path = path || `user/${randomUUID()}.${fileType.split("/")[1]}`;
+export async function getUploadUrl(fileType) {
+  const s3Path = `user/${randomUUID()}.${fileType.split("/")[1]}`;
   const s3params = {
     Bucket: bucketName,
     Key: s3Path,
