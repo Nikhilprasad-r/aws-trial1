@@ -7,6 +7,7 @@ import { UserContext } from "@/context/UserContext";
 import { IoMdPersonAdd } from "react-icons/io";
 import { FaUserPlus } from "react-icons/fa";
 import RegisterUser from "./RegisterUser";
+import Swal from "sweetalert2";
 
 interface UserData {
   _id: string;
@@ -24,12 +25,48 @@ const AdminPanel = () => {
     useContext(UserContext);
 
   const deleteUser = async (id: string) => {
-    try {
-      await axios.delete(`/api/users/${id}`);
-      const newUsers = users.filter((user) => user._id !== id);
-      setUsers(newUsers);
-    } catch (error) {
-      console.error("Failed to delete user:", error);
+    const swalWithTailwindButtons = Swal.mixin({
+      customClass: {
+        confirmButton: "bg-emerald-800 text-white px-4 py-2 rounded-md mx-2",
+        cancelButton: "bg-rose-900 text-white px-4 py-2 rounded-md mx-2",
+      },
+      buttonsStyling: false,
+    });
+
+    const result = await swalWithTailwindButtons.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "No, cancel!",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`/api/users/${id}`);
+        const newUsers = users.filter((user) => user._id !== id);
+        setUsers(newUsers);
+        swalWithTailwindButtons.fire(
+          "Deleted!",
+          "Your file has been deleted.",
+          "success"
+        );
+      } catch (error) {
+        console.error("Failed to delete user:", error);
+        swalWithTailwindButtons.fire(
+          "Failed!",
+          "Could not delete the user.",
+          "error"
+        );
+      }
+    } else if (result.dismiss === Swal.DismissReason.cancel) {
+      swalWithTailwindButtons.fire(
+        "Cancelled",
+        "Your imaginary file is safe :)",
+        "error"
+      );
     }
   };
 
@@ -53,7 +90,7 @@ const AdminPanel = () => {
 
   return (
     <div>
-      <div className="p-4 sm:ml-64 z-0">
+      <div className="p-4 sm:ml-64">
         <div
           className="flex justify-end py-3 text-green-600 text-xl"
           onClick={() => {

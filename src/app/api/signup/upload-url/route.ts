@@ -1,26 +1,23 @@
-import { getUploadUrl } from "../../../utils/s3imageupload";
-import { headers } from 'next/headers'
+import { getUploadUrl } from "@/app/utils/s3imageupload";
+import { headers } from "next/headers";
 import { NextApiRequest, NextApiResponse } from "next";
 import { NextResponse } from "next/server";
-import parseError from "../../../utils/errorParser";
-
-
+import parseError from "@/app/utils/errorParser";
 
 export async function GET(req: NextApiRequest, res: NextApiResponse) {
-  
-  const fileTypeencoded = headers().get('x-file-type')
-  const fileType = decodeURIComponent(fileTypeencoded as string);
-  
-
-  if (typeof fileType !== "string") {
-    return NextResponse.json({ error: "Invalid or missing fileType header." }, { status: 400 })
-   
+  const s3Pathencoded = headers().get("x-file-s3Path");
+  const s3Path = decodeURIComponent(s3Pathencoded as string);
+  if (typeof s3Path !== "string") {
+    return NextResponse.json(
+      { error: "Invalid or missing s3Path header." },
+      { status: 400 }
+    );
   }
   try {
-    const {uploadUrl,  s3Path } = await getUploadUrl(fileType);
-   return NextResponse.json({uploadUrl:uploadUrl, s3Path: s3Path }, { status: 200 })
+    const { uploadUrl } = await getUploadUrl(s3Path);
+    return NextResponse.json({ uploadUrl: uploadUrl }, { status: 200 });
   } catch (error) {
     const message = parseError(error);
-   return  NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

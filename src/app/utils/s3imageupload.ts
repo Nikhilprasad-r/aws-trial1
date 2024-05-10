@@ -1,16 +1,18 @@
-import AWS from "aws-sdk";
-import { randomUUID } from "crypto";
-const s3 = new AWS.S3({
+import { S3 } from "aws-sdk";
+
+const s3 = new S3({
   region: process.env.AWS_REGION,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
 });
+
 const bucketName = process.env.AWS_S3_BUCKET;
 
-export async function getUploadUrl(fileType) {
-  const s3Path = `user/${randomUUID()}.${fileType.split("/")[1]}`;
+export async function getUploadUrl(
+  s3Path: string
+): Promise<{ uploadUrl: string }> {
   const s3params = {
     Bucket: bucketName,
     Key: s3Path,
@@ -19,7 +21,7 @@ export async function getUploadUrl(fileType) {
   try {
     const uploadUrl = await s3.getSignedUrlPromise("putObject", s3params);
     console.log("Got signed URL:", s3Path);
-    return { uploadUrl, s3Path };
+    return { uploadUrl };
   } catch (error) {
     console.error("Error getting signed URL:", error);
     throw error;

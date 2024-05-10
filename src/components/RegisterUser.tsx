@@ -13,6 +13,8 @@ import { IoMdPersonAdd, IoMdClose } from "react-icons/io";
 import { RiImageEditFill } from "react-icons/ri";
 import { UserContext } from "@/context/UserContext";
 import { FaUserCheck } from "react-icons/fa6";
+import { v4 as uuidv4 } from "uuid";
+
 interface RegisterUserFormValues {
   _id: string;
   firstname: string;
@@ -88,17 +90,20 @@ const RegisterUser: React.FC = () => {
       : null;
     setFile(selectedFile);
     if (selectedFile) {
-      setUploadedImageUrl(URL.createObjectURL(selectedFile));
       setIsLoading(true);
       try {
+        const s3Path = `user/${uuidv4()}.${selectedFile.type.split("/")[1]}`;
         const response = await axios.get("/api/signup/upload-url", {
-          headers: { "X-File-Type": encodeURIComponent(selectedFile.type) },
+          headers: { "X-File-s3Path": encodeURIComponent(s3Path) },
         });
-        const { s3Path, uploadUrl } = response.data;
+        const { uploadUrl } = response.data;
+        console.log(uploadUrl);
         setFieldValue("s3Path", s3Path);
         setFieldValue("uploadUrl", uploadUrl);
-      } catch (error: any) {
-        alert(`Error getting upload URL: ${error.message || error.toString()}`);
+        setUploadedImageUrl(URL.createObjectURL(selectedFile));
+      } catch (error) {
+        console.error(`Error getting upload URL: ${error}`);
+        alert("Failed to get upload URL, please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -144,7 +149,13 @@ const RegisterUser: React.FC = () => {
   };
 
   return (
-    <div className=" z-10">
+    <div
+      className={`fixed top-0 right-0 left-0 z-50 flex items-center justify-center w-full h-full ${
+        isModalOpen
+          ? "text-black visible opacity-100 ease-in inset-0  bg-black/70"
+          : "invisible opacity-0 ease-out"
+      } transition-all duration-100`}
+    >
       <Formik
         initialValues={initialValues}
         validationSchema={RegisterUserSchema}
