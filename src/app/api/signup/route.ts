@@ -8,16 +8,7 @@ export async function POST(req: NextRequest, res: NextResponse) {
   await dbConnect();
 
   const body = await req.json();
-  const {
-    firstname,
-    lastname,
-    email,
-    phone,
-    role,
-    password,
-    s3Path,
-    imageUrl,
-  } = body;
+  const { firstname, lastname, email, phone, role, s3Path, imageUrl } = body;
 
   try {
     const existingUser = await Usertest.findOne({
@@ -29,14 +20,12 @@ export async function POST(req: NextRequest, res: NextResponse) {
         { status: 409 }
       );
     }
-
     const newUser = new Usertest({
       firstname,
       lastname,
       email,
       phone,
       role,
-      password,
       s3Path,
       imageUrl,
     });
@@ -47,7 +36,6 @@ export async function POST(req: NextRequest, res: NextResponse) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Failed to create user:", error);
     const message = parseError(error);
     return NextResponse.json({ error: message }, { status: 500 });
   }

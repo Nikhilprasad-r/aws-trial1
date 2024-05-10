@@ -8,7 +8,6 @@ export interface UserData {
   phone: string;
   role: string;
   imageUrl: string;
-  password: string;
 }
 
 interface UserContextType {

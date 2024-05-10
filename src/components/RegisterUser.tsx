@@ -14,6 +14,7 @@ import { RiImageEditFill } from "react-icons/ri";
 import { UserContext } from "@/context/UserContext";
 import { FaUserCheck } from "react-icons/fa6";
 import { v4 as uuidv4 } from "uuid";
+import Swal from "sweetalert2";
 
 interface RegisterUserFormValues {
   _id: string;
@@ -21,7 +22,6 @@ interface RegisterUserFormValues {
   lastname: string;
   email: string;
   phone: string;
-  password: string;
   role: string;
   s3Path: string;
   uploadUrl: string;
@@ -33,7 +33,6 @@ interface UserData {
   lastname: string;
   email: string;
   phone: string;
-  password: string;
   role: string;
   imageUrl: string;
 }
@@ -50,9 +49,6 @@ const RegisterUserSchema = Yup.object().shape({
   phone: Yup.string()
     .matches(/^\d{10}$/, "Invalid phone number")
     .required("Required"),
-  password: Yup.string()
-    .min(8, "Password is too short - should be 8 chars minimum.")
-    .required("Password is required"),
   role: Yup.string().required("Role is required"),
 });
 
@@ -74,7 +70,6 @@ const RegisterUser: React.FC = () => {
     lastname: editedUser?.lastname || "",
     email: editedUser?.email || "",
     phone: editedUser?.phone || "",
-    password: "",
     role: editedUser?.role || "",
     s3Path: "",
     uploadUrl: "",
@@ -93,17 +88,20 @@ const RegisterUser: React.FC = () => {
       setIsLoading(true);
       try {
         const s3Path = `user/${uuidv4()}.${selectedFile.type.split("/")[1]}`;
-        const response = await axios.get("/api/signup/upload-url", {
+        const response = await axios.get("/api/presignedUrl", {
           headers: { "X-File-s3Path": encodeURIComponent(s3Path) },
         });
         const { uploadUrl } = response.data;
-        console.log(uploadUrl);
         setFieldValue("s3Path", s3Path);
         setFieldValue("uploadUrl", uploadUrl);
         setUploadedImageUrl(URL.createObjectURL(selectedFile));
       } catch (error) {
-        console.error(`Error getting upload URL: ${error}`);
-        alert("Failed to get upload URL, please try again.");
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to get upload URL, please try again.",
+          icon: "error",
+          confirmButtonText: "OK",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -120,7 +118,7 @@ const RegisterUser: React.FC = () => {
         await axios.put(`/api/users/${editedUser._id}`, values);
         const updatedUsers = users.map((user) => {
           if (user._id === editedUser._id) {
-            return values;
+            return { ...user, ...values };
           }
           return user;
         });
@@ -134,15 +132,27 @@ const RegisterUser: React.FC = () => {
           });
           values.imageUrl = values.uploadUrl.split("?")[0];
         }
-        await axios.post("/api/signup", values);
+        const response = await axios.post("/api/signup", values);
+        const { userId } = response.data;
+        values._id = userId;
         addUser(values);
       }
-      alert("User saved successfully!");
+      Swal.fire({
+        title: "Success!",
+        text: "User created successfully",
+        icon: "success",
+        confirmButtonText: "OK",
+      });
 
       setModalOpen(false);
       resetForm();
     } catch (error: any) {
-      alert(`Error: ${error.message || error.toString()}`);
+      Swal.fire({
+        title: "Error!",
+        text: error.response?.data.error || error.message,
+        icon: "error",
+        confirmButtonText: "OK",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -242,22 +252,6 @@ const RegisterUser: React.FC = () => {
                 className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
               >
                 Email address
-              </label>
-            </div>
-            <div className="relative z-0 w-full mb-5 group">
-              <Field
-                type="password"
-                name="password"
-                id="password"
-                className="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                placeholder=" "
-                required
-              />
-              <label
-                htmlFor="password"
-                className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
-              >
-                Password
               </label>
             </div>
             <div className="grid md:grid-cols-2 md:gap-6">

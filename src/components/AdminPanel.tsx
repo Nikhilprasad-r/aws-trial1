@@ -4,7 +4,7 @@ import axios from "axios";
 import { FaEdit } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
 import { UserContext } from "@/context/UserContext";
-import { IoMdPersonAdd } from "react-icons/io";
+import { TbPasswordUser } from "react-icons/tb";
 import { FaUserPlus } from "react-icons/fa";
 import RegisterUser from "./RegisterUser";
 import Swal from "sweetalert2";
@@ -17,7 +17,6 @@ interface UserData {
   phone: string;
   role: string;
   imageUrl: string;
-  password: string;
 }
 
 const AdminPanel = () => {
@@ -45,6 +44,7 @@ const AdminPanel = () => {
 
     if (result.isConfirmed) {
       try {
+        console.log("Deleting user with id:", id);
         await axios.delete(`/api/users/${id}`);
         const newUsers = users.filter((user) => user._id !== id);
         setUsers(newUsers);
@@ -54,7 +54,6 @@ const AdminPanel = () => {
           "success"
         );
       } catch (error) {
-        console.error("Failed to delete user:", error);
         swalWithTailwindButtons.fire(
           "Failed!",
           "Could not delete the user.",
@@ -69,6 +68,22 @@ const AdminPanel = () => {
       );
     }
   };
+  const generatePassword = async (id: string) => {
+    try {
+      const response = await axios.post(`/api/generate-password/${id}`);
+      Swal.fire({
+        title: "Password generated!",
+        text: `The new password is sent to the user's email.`,
+        icon: "success",
+      });
+    } catch (error) {
+      Swal.fire({
+        title: "Failed!",
+        text: "Could not generate password.",
+        icon: "error",
+      });
+    }
+  };
 
   const editUser = (user: UserData) => {
     setEditedUser(user);
@@ -80,6 +95,7 @@ const AdminPanel = () => {
       try {
         const response = await axios.get("/api/users");
         setUsers(response.data);
+        console.log("Fetched data:", response.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -88,11 +104,13 @@ const AdminPanel = () => {
     fetchData();
   }, [setUsers]);
 
+  console.log(users);
+
   return (
     <div>
       <div className="p-4 sm:ml-64">
         <div
-          className="flex justify-end py-3 text-green-600 text-xl"
+          className="flex justify-end py-3 text-green-600 cursor-pointer text-xl"
           onClick={() => {
             setEditedUser(null);
             setModalOpen(true);
@@ -124,37 +142,55 @@ const AdminPanel = () => {
                   <th scope="col" className="px-6 py-3">
                     Delete
                   </th>
+                  <th scope="col" className="px-6 py-3">
+                    Generate Password
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
-                  <tr
-                    key={user._id}
-                    className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-                  >
-                    <th
-                      scope="row"
-                      className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white capitalize"
+                {users.map((user) => {
+                  console.log("jkbdjc", user);
+                  return (
+                    <tr
+                      key={user._id}
+                      className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
                     >
-                      {user.firstname + " " + user.lastname}
-                    </th>
-                    <td className="px-6 py-4">{user.email}</td>
-                    <td className="px-6 py-4">{user.phone}</td>
-                    <td className="px-6 py-4">{user.role}</td>
-                    <td className="px-6 py-4">
-                      <FaEdit
-                        onClick={() => editUser(user)}
-                        className="font-medium text-blue-600 dark:text-blue-500 mx-auto hover:underline cursor-pointer"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <MdDeleteForever
-                        onClick={() => deleteUser(user._id)}
-                        className="font-medium text-blue-600 dark:text-blue-500 mx-auto hover:underline cursor-pointer"
-                      />
-                    </td>
-                  </tr>
-                ))}
+                      <th
+                        scope="row"
+                        className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white capitalize"
+                      >
+                        {user.firstname + " " + user.lastname}
+                      </th>
+                      <td className="px-6 py-4">{user.email}</td>
+                      <td className="px-6 py-4">{user.phone}</td>
+                      <td className="px-6 py-4">{user.role}</td>
+                      <td className="px-6 py-4">
+                        <FaEdit
+                          onClick={() => editUser(user)}
+                          className="font-medium text-blue-600 dark:text-blue-500 mx-auto hover:underline cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <MdDeleteForever
+                          onClick={() => deleteUser(user._id)}
+                          className="font-medium text-blue-600 dark:text-blue-500 mx-auto hover:underline cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <TbPasswordUser
+                          onClick={() => {
+                            generatePassword(user._id);
+                            console.log(
+                              "generate btoo password for user with id:",
+                              user
+                            );
+                          }}
+                          className="font-medium text-blue-600 dark:text-blue-500 mx-auto hover:underline cursor-pointer"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

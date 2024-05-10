@@ -20,7 +20,6 @@ export async function getUploadUrl(
 
   try {
     const uploadUrl = await s3.getSignedUrlPromise("putObject", s3params);
-    console.log("Got signed URL:", s3Path);
     return { uploadUrl };
   } catch (error) {
     console.error("Error getting signed URL:", error);
