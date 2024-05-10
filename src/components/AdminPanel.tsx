@@ -93,7 +93,7 @@ const AdminPanel = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("/api/users");
+        const response = await axios.get("/api/users/");
         setUsers(response.data);
         console.log("Fetched data:", response.data);
       } catch (error) {
@@ -149,7 +149,6 @@ const AdminPanel = () => {
               </thead>
               <tbody>
                 {users.map((user) => {
-                  console.log("jkbdjc", user);
                   return (
                     <tr
                       key={user._id}
@@ -180,10 +179,6 @@ const AdminPanel = () => {
                         <TbPasswordUser
                           onClick={() => {
                             generatePassword(user._id);
-                            console.log(
-                              "generate btoo password for user with id:",
-                              user
-                            );
                           }}
                           className="font-medium text-blue-600 dark:text-blue-500 mx-auto hover:underline cursor-pointer"
                         />
