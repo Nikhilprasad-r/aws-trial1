@@ -143,7 +143,7 @@ const AdminPanel = () => {
                     Delete
                   </th>
                   <th scope="col" className="px-6 py-3">
-                    Generate Password
+                    Regenerate Password
                   </th>
                 </tr>
               </thead>
