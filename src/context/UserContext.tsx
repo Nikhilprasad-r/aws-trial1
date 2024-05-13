@@ -8,6 +8,7 @@ export interface UserData {
   phone: string;
   role: string;
   imageUrl: string;
+  s3Path?: string;
 }
 
 interface UserContextType {
