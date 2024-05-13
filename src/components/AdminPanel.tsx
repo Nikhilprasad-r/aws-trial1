@@ -102,9 +102,7 @@ const AdminPanel = () => {
     };
 
     fetchData();
-  }, [setUsers]);
-
-  console.log(users);
+  }, []);
 
   return (
     <div>

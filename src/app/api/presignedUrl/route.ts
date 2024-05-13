@@ -2,7 +2,7 @@ import { getUploadUrl } from "@/app/utils/s3imageupload";
 import { headers } from "next/headers";
 import { NextApiRequest, NextApiResponse } from "next";
 import { NextResponse } from "next/server";
-import parseError from "@/app/utils/errorParser";
+import parseError from "@/app/utils/types/errorParser";
 
 export async function GET(req: NextApiRequest, res: NextApiResponse) {
   const s3Pathencoded = headers().get("x-file-s3Path");
