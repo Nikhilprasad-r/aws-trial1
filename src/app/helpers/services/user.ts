@@ -1,9 +1,9 @@
-import bcrypt from "bcryptjs";
-import { randomUUID } from "crypto";
 import Usertest from "@/app/models/Usertest";
+import { passwordGenerator } from "@/app/utils/generatePassword";
+import { UserDataType } from "@/app/utils/types/user";
 
-export const newUser = async (body: any) => {
-  const { firstname, lastname, email, phone, role, s3Path, imageUrl } = body;
+export const newUser = async (data: Partial<UserDataType>) => {
+  const { firstname, lastname, email, phone, role, s3Path, imageUrl } = data;
 
   const existingUser = await Usertest.findOne({
     $or: [{ email }, { phone }],
@@ -12,7 +12,7 @@ export const newUser = async (body: any) => {
     return { error: "User with this email or phone already exists." };
   }
 
-  const password = await bcrypt.hash(randomUUID(), 10);
+  const password = await passwordGenerator();
   const newUser = new Usertest({
     firstname,
     lastname,
@@ -28,22 +28,23 @@ export const newUser = async (body: any) => {
   return newUser;
 };
 
-export const generatePassword = async (id: string) => {
+export const assignPassword = async (id: string) => {
   const user = await Usertest.findById(id);
   if (!user) {
     throw new Error("User not found");
   }
-  const password = await bcrypt.hash(randomUUID(), 10);
+  const password = await passwordGenerator();
   user.password = password;
   user.isactive = true;
   await user.save();
 };
 
 export const deleteUser = async (id: string) => {
-  await Usertest.findByIdAndDelete(id);
+  const response = await Usertest.findByIdAndDelete(id);
+  return response;
 };
-export const updateUser = async (id: string, body: any) => {
-  const { firstname, lastname, email, phone, role } = body;
+export const updateUser = async (id: string, data: Partial<UserDataType>) => {
+  const { firstname, lastname, email, phone, role } = data;
   const update = {
     $set: {
       ...(firstname && { firstname }),
@@ -57,11 +58,14 @@ export const updateUser = async (id: string, body: any) => {
   const updateResult = await Usertest.findByIdAndUpdate(id, update, {
     new: true,
   });
-  if (!updateResult) {
-    throw new Error("User not found");
-  }
+  return updateResult;
 };
 export const getUsers = async () => {
-  const users = await Usertest.find();
+  const users = await Usertest.find({});
   return users;
+};
+
+export const getUserbyid = async (id: string) => {
+  const user = await Usertest.findById(id);
+  return user;
 };

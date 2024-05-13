@@ -1,6 +1,6 @@
 import dbConnect from "@/app/lib/mongodb";
 import { NextResponse } from "next/server";
-import parseError from "@/app/utils/errorParser";
+import parseError from "@/app/utils/types/errorParser";
 import { type NextRequest } from "next/server";
 import { newUser } from "@/app/helpers/services/user";
 

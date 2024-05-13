@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/app/lib/mongodb";
-import parseError from "@/app/utils/errorParser";
-import { generatePassword } from "@/app/helpers/services/user";
+import parseError from "@/app/utils/types/errorParser";
+import { assignPassword } from "@/app/helpers/services/user";
 type Params = {
   id: string;
 };
@@ -13,8 +13,11 @@ export async function POST(
 ) {
   try {
     const { id } = context.params;
+    if (!id) {
+      return NextResponse.json({ error: "Id is required" }, { status: 400 });
+    }
     await dbConnect();
-    generatePassword(id);
+    await assignPassword(id);
     return NextResponse.json({ status: 200 });
   } catch (error) {
     const message = parseError(error);

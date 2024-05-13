@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-import parseError from "@/app/utils/errorParser";
+import parseError from "@/app/utils/types/errorParser";
 const dbConnect = async () => {
   if (mongoose.connection.readyState >= 1) {
     return;

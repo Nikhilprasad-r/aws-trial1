@@ -1,8 +1,12 @@
 import dbConnect from "@/app/lib/mongodb";
 import Usertest from "@/app/models/Usertest";
 import { NextResponse } from "next/server";
-import parseError from "@/app/utils/errorParser";
-import { deleteUser, updateUser } from "@/app/helpers/services/user";
+import parseError from "@/app/utils/types/errorParser";
+import {
+  deleteUser,
+  getUserbyid,
+  updateUser,
+} from "@/app/helpers/services/user";
 type Params = {
   id: string;
 };
@@ -12,13 +16,15 @@ export async function GET(
   res: NextResponse
 ) {
   try {
-    await dbConnect();
     const { id } = context.params;
     if (!id) {
-      const users = await Usertest.find({});
-      return NextResponse.json(users, { status: 200 });
+      return NextResponse.json({ error: "Id is required" }, { status: 400 });
     }
-    const user = await Usertest.findById(id);
+    await dbConnect();
+    const user = await getUserbyid(id);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
     return NextResponse.json(user, { status: 200 });
   } catch (error) {
     const message = parseError(error);
@@ -31,9 +37,16 @@ export async function DELETE(
   res: NextResponse
 ) {
   try {
-    await dbConnect();
     const id = context.params.id;
-    deleteUser(id);
+    if (!id) {
+      return NextResponse.json({ error: "Id is required" }, { status: 400 });
+    }
+    await dbConnect();
+    const result = await deleteUser(id);
+    if (!result) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     return NextResponse.json({ message: "User deleted" }, { status: 200 });
   } catch (error) {
     const message = parseError(error);
@@ -46,10 +59,18 @@ export async function PUT(
   res: NextResponse
 ) {
   try {
-    await dbConnect();
     const body = await req.json();
     const id = context.params.id;
-    updateUser(id, body);
+    if (!id || !body || Object.keys(body).length === 0) {
+      return NextResponse.json({ error: "Invalid data" }, { status: 400 });
+    }
+
+    await dbConnect();
+    const updaterespone = await updateUser(id, body);
+    if (!updaterespone) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     return NextResponse.json({ message: "User updated" }, { status: 200 });
   } catch (error) {
     const message = parseError(error);
