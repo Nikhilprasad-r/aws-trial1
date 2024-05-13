@@ -9,6 +9,7 @@ export interface UserData {
   role: string;
   imageUrl: string;
   s3Path?: string;
+  uploadUrl?: string;
 }
 
 interface UserContextType {

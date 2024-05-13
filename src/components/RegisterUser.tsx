@@ -56,6 +56,7 @@ const RegisterUser: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [olds3Path, setOlds3Path] = useState<string>("");
   const {
     addUser,
     editedUser,
@@ -69,6 +70,10 @@ const RegisterUser: React.FC = () => {
     if (editedUser && editedUser.imageUrl) {
       setUploadedImageUrl(editedUser.imageUrl);
     }
+    if (editedUser && editedUser.s3Path) {
+      console.log(editedUser.s3Path);
+      setOlds3Path(editedUser.s3Path);
+    }
   }, [editedUser]);
   const initialValues: RegisterUserFormValues = {
     firstname: editedUser?.firstname || "",
@@ -76,8 +81,8 @@ const RegisterUser: React.FC = () => {
     email: editedUser?.email || "",
     phone: editedUser?.phone || "",
     role: editedUser?.role || "",
-    s3Path: "",
-    uploadUrl: "",
+    s3Path: editedUser?.s3Path || "",
+    uploadUrl: editedUser?.uploadUrl || "",
     imageUrl: editedUser?.imageUrl || "",
     _id: editedUser?._id || "",
   };
@@ -112,6 +117,7 @@ const RegisterUser: React.FC = () => {
       }
     }
   };
+
   const handleSubmit = async (
     values: RegisterUserFormValues,
     { resetForm, setSubmitting }: FormikHelpers<RegisterUserFormValues>
@@ -119,18 +125,27 @@ const RegisterUser: React.FC = () => {
     setSubmitting(true);
     try {
       if (editedUser && file) {
-        const s3Path = `user/${uuidv4()}.${file.type.split("/")[1]}`;
-        const response = await axios.get("/api/presignedUrl", {
-          headers: { "X-File-s3Path": encodeURIComponent(s3Path) },
+        if (editedUser.s3Path) {
+          const deleteUrlResponse = await axios.get("/api/presignedUrl", {
+            headers: { "X-File-s3Path": encodeURIComponent(olds3Path) },
+          });
+          const { uploadUrl: deleteUrl } = deleteUrlResponse.data;
+          const response = await axios.delete(deleteUrl);
+        }
+        const newS3Path = `user/${uuidv4()}.${file.type.split("/")[1]}`;
+        const getUrlResponse = await axios.get("/api/presignedUrl", {
+          headers: { "X-File-s3Path": encodeURIComponent(newS3Path) },
         });
-        const { uploadUrl } = response.data;
-        values.s3Path = s3Path;
-        values.uploadUrl = uploadUrl;
-        values.imageUrl = uploadUrl.split("?")[0];
-        await axios.put(uploadUrl, file, {
+        const { uploadUrl: newUploadUrl } = getUrlResponse.data;
+        await axios.put(newUploadUrl, file, {
           headers: { "Content-Type": file.type },
         });
+
+        values.s3Path = newS3Path;
+        values.uploadUrl = newUploadUrl;
+        values.imageUrl = newUploadUrl.split("?")[0];
       }
+
       if (editedUser) {
         await axios.put(`/api/users/${editedUser._id}`, values);
         const updatedUsers = users.map((user) => {
@@ -146,6 +161,7 @@ const RegisterUser: React.FC = () => {
         values._id = userId;
         addUser(values);
       }
+
       Swal.fire({
         title: "Success!",
         text: "User updated successfully",
