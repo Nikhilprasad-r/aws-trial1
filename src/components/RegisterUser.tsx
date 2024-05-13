@@ -112,13 +112,25 @@ const RegisterUser: React.FC = () => {
       }
     }
   };
-
   const handleSubmit = async (
     values: RegisterUserFormValues,
     { resetForm, setSubmitting }: FormikHelpers<RegisterUserFormValues>
   ) => {
     setSubmitting(true);
     try {
+      if (editedUser && file) {
+        const s3Path = `user/${uuidv4()}.${file.type.split("/")[1]}`;
+        const response = await axios.get("/api/presignedUrl", {
+          headers: { "X-File-s3Path": encodeURIComponent(s3Path) },
+        });
+        const { uploadUrl } = response.data;
+        values.s3Path = s3Path;
+        values.uploadUrl = uploadUrl;
+        values.imageUrl = uploadUrl.split("?")[0];
+        await axios.put(uploadUrl, file, {
+          headers: { "Content-Type": file.type },
+        });
+      }
       if (editedUser) {
         await axios.put(`/api/users/${editedUser._id}`, values);
         const updatedUsers = users.map((user) => {
@@ -128,15 +140,7 @@ const RegisterUser: React.FC = () => {
           return user;
         });
         setUsers(updatedUsers);
-        setEditedUser(null);
-        setModalOpen(false);
       } else {
-        if (file && values.uploadUrl) {
-          await axios.put(values.uploadUrl, file, {
-            headers: { "Content-Type": file.type },
-          });
-          values.imageUrl = values.uploadUrl.split("?")[0];
-        }
         const response = await axios.post("/api/signup", values);
         const { userId } = response.data;
         values._id = userId;
@@ -144,11 +148,10 @@ const RegisterUser: React.FC = () => {
       }
       Swal.fire({
         title: "Success!",
-        text: "User created successfully",
+        text: "User updated successfully",
         icon: "success",
         confirmButtonText: "OK",
       });
-
       setModalOpen(false);
       resetForm();
     } catch (error: any) {
