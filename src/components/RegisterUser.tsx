@@ -65,6 +65,11 @@ const RegisterUser: React.FC = () => {
     setModalOpen,
     users,
   } = useContext(UserContext);
+  useEffect(() => {
+    if (editedUser && editedUser.imageUrl) {
+      setUploadedImageUrl(editedUser.imageUrl);
+    }
+  }, [editedUser]);
   const initialValues: RegisterUserFormValues = {
     firstname: editedUser?.firstname || "",
     lastname: editedUser?.lastname || "",
@@ -182,10 +187,10 @@ const RegisterUser: React.FC = () => {
               />
             </div>
             <div className="flex items-center justify-center w-full mb-5">
-              {uploadedImageUrl || editedUser?.imageUrl ? (
+              {uploadedImageUrl ? (
                 <div>
                   <img
-                    src={uploadedImageUrl || editedUser?.imageUrl}
+                    src={uploadedImageUrl}
                     alt="Uploaded Image"
                     className="size-[100%] rounded-lg object-cover"
                   />
