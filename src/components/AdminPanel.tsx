@@ -19,13 +19,19 @@ import {
 import Loader from "./ui/Loader";
 
 const AdminPanel = () => {
-  const [isLoading, setisLoading] = useState(false);
-  const { users, setUsers, setEditedUser, setModalOpen, isModalOpen } =
-    useContext(UserContext);
+  const {
+    users,
+    setUsers,
+    setEditedUser,
+    setModalOpen,
+    isModalOpen,
+    isLoading,
+    setIsLoading,
+  } = useContext(UserContext);
 
   const deleteUser = async (user: UserData) => {
     const result = await confirmDeleteAlert();
-    setisLoading(true);
+    setIsLoading(true);
 
     if (result.isConfirmed) {
       try {
@@ -38,25 +44,25 @@ const AdminPanel = () => {
         await axios.delete(`/api/users/${id}`);
         const newUsers = users.filter((user) => user._id !== id);
         setUsers(newUsers);
-        setisLoading(false);
+        setIsLoading(false);
         deleteAlert();
       } catch (error) {
-        setisLoading(false);
+        setIsLoading(false);
         errorAlert("Could not delete user.");
       }
     } else if (result.dismiss === Swal.DismissReason.cancel) {
-      setisLoading(false);
+      setIsLoading(false);
       cancelAlert("User deletion cancelled.");
     }
   };
   const generatePassword = async (id: string) => {
-    setisLoading(true);
+    setIsLoading(true);
     try {
       const response = await axios.post(`/api/generate-password/${id}`);
-      setisLoading(false);
+      setIsLoading(false);
       passwordAlert();
     } catch (error) {
-      setisLoading(false);
+      setIsLoading(false);
       errorAlert("Could not generate password.");
     }
   };
@@ -68,13 +74,13 @@ const AdminPanel = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      setisLoading(true);
+      setIsLoading(true);
       try {
         const response = await axios.get("/api/users/");
         setUsers(response.data);
-        setisLoading(false);
+        setIsLoading(false);
       } catch (error) {
-        setisLoading(false);
+        setIsLoading(false);
         errorAlert("Could not fetch users.");
       }
     };

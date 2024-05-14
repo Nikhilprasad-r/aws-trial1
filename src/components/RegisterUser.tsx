@@ -31,7 +31,6 @@ const RegisterUserSchema = Yup.object().shape({
 const RegisterUser: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [olds3Path, setOlds3Path] = useState<string>("");
   const {
     addUser,
@@ -41,6 +40,8 @@ const RegisterUser: React.FC = () => {
     isModalOpen,
     setModalOpen,
     users,
+    isLoading,
+    setIsLoading,
   } = useContext(UserContext);
 
   useEffect(() => {

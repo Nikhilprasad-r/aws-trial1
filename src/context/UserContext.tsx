@@ -20,6 +20,8 @@ interface UserContextType {
   setEditedUser: (user: UserData | null) => void;
   isModalOpen: boolean;
   setModalOpen: (isOpen: boolean) => void;
+  isLoading: boolean;
+  setIsLoading: (isLoading: boolean) => void;
 }
 
 export const UserContext = createContext<UserContextType>({
@@ -30,6 +32,8 @@ export const UserContext = createContext<UserContextType>({
   setEditedUser: () => {},
   isModalOpen: false,
   setModalOpen: () => {},
+  isLoading: false,
+  setIsLoading: () => {},
 });
 interface UserProviderProps {
   children: ReactNode;
@@ -39,6 +43,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [editedUser, setEditedUser] = useState<UserData | null>(null);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const addUser = (user: UserData) => {
     setUsers((prevUsers) => [...prevUsers, user]);
@@ -54,6 +59,8 @@ export const UserProvider = ({ children }: UserProviderProps) => {
         setEditedUser,
         isModalOpen,
         setModalOpen,
+        isLoading,
+        setIsLoading,
       }}
     >
       {children}
