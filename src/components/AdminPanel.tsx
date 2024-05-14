@@ -9,29 +9,23 @@ import { FaUserPlus } from "react-icons/fa";
 import RegisterUser from "./RegisterUser";
 import Swal from "sweetalert2";
 import { UserData } from "@/app/utils/types/user.d";
+import {
+  cancelAlert,
+  confirmDeleteAlert,
+  deleteAlert,
+  errorAlert,
+  passwordAlert,
+} from "./ui/sweetalert";
+import Loader from "./ui/Loader";
 
 const AdminPanel = () => {
+  const [isLoading, setisLoading] = useState(false);
   const { users, setUsers, setEditedUser, setModalOpen, isModalOpen } =
     useContext(UserContext);
 
   const deleteUser = async (user: UserData) => {
-    const swalWithTailwindButtons = Swal.mixin({
-      customClass: {
-        confirmButton: "bg-emerald-800 text-white px-4 py-2 rounded-md mx-2",
-        cancelButton: "bg-rose-900 text-white px-4 py-2 rounded-md mx-2",
-      },
-      buttonsStyling: false,
-    });
-
-    const result = await swalWithTailwindButtons.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "No, cancel!",
-      reverseButtons: true,
-    });
+    const result = await confirmDeleteAlert();
+    setisLoading(true);
 
     if (result.isConfirmed) {
       try {
@@ -44,40 +38,26 @@ const AdminPanel = () => {
         await axios.delete(`/api/users/${id}`);
         const newUsers = users.filter((user) => user._id !== id);
         setUsers(newUsers);
-        swalWithTailwindButtons.fire(
-          "Deleted!",
-          "Your file has been deleted.",
-          "success"
-        );
+        setisLoading(false);
+        deleteAlert();
       } catch (error) {
-        swalWithTailwindButtons.fire(
-          "Failed!",
-          "Could not delete the user.",
-          "error"
-        );
+        setisLoading(false);
+        errorAlert("Could not delete user.");
       }
     } else if (result.dismiss === Swal.DismissReason.cancel) {
-      swalWithTailwindButtons.fire(
-        "Cancelled",
-        "Your imaginary file is safe :)",
-        "error"
-      );
+      setisLoading(false);
+      cancelAlert("User deletion cancelled.");
     }
   };
   const generatePassword = async (id: string) => {
+    setisLoading(true);
     try {
       const response = await axios.post(`/api/generate-password/${id}`);
-      Swal.fire({
-        title: "Password generated!",
-        text: `The new password is sent to the user's email.`,
-        icon: "success",
-      });
+      setisLoading(false);
+      passwordAlert();
     } catch (error) {
-      Swal.fire({
-        title: "Failed!",
-        text: "Could not generate password.",
-        icon: "error",
-      });
+      setisLoading(false);
+      errorAlert("Could not generate password.");
     }
   };
 
@@ -88,12 +68,14 @@ const AdminPanel = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setisLoading(true);
       try {
         const response = await axios.get("/api/users/");
         setUsers(response.data);
-        console.log("Fetched data:", response.data);
+        setisLoading(false);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        setisLoading(false);
+        errorAlert("Could not fetch users.");
       }
     };
 
@@ -102,6 +84,7 @@ const AdminPanel = () => {
 
   return (
     <div>
+      {isLoading && <Loader />}
       <div className="p-4 sm:ml-64">
         <div
           className="flex justify-end py-3 text-green-600 cursor-pointer text-xl"
