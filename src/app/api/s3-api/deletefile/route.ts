@@ -1,10 +1,10 @@
-import { getUploadUrl } from "@/app/utils/s3imageupload";
-import { headers } from "next/headers";
-import { NextApiRequest, NextApiResponse } from "next";
+import { deleteObject } from "@/app/utils/s3Logics";
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import parseError from "@/app/utils/types/errorParser";
 
-export async function GET(req: NextApiRequest, res: NextApiResponse) {
+export async function DELETE(req: Request, res: NextResponse) {
+  console.log(req);
   const s3Pathencoded = headers().get("x-file-s3Path");
   const s3Path = decodeURIComponent(s3Pathencoded as string);
   if (typeof s3Path !== "string") {
@@ -14,8 +14,8 @@ export async function GET(req: NextApiRequest, res: NextApiResponse) {
     );
   }
   try {
-    const { uploadUrl } = await getUploadUrl(s3Path);
-    return NextResponse.json({ uploadUrl: uploadUrl }, { status: 200 });
+    await deleteObject(s3Path);
+    return NextResponse.json({ message: "File deleted" }, { status: 200 });
   } catch (error) {
     const message = parseError(error);
     return NextResponse.json({ error: message }, { status: 500 });

@@ -98,12 +98,13 @@ const RegisterUser: React.FC = () => {
       setIsLoading(true);
       try {
         const s3Path = `user/${uuidv4()}.${selectedFile.type.split("/")[1]}`;
-        const response = await axios.get("/api/presignedUrl", {
+        const response = await axios.get("/api/s3-api/uploadurl", {
           headers: { "X-File-s3Path": encodeURIComponent(s3Path) },
         });
         const { uploadUrl } = response.data;
         setFieldValue("s3Path", s3Path);
         setFieldValue("uploadUrl", uploadUrl);
+        setFieldValue("imageUrl", uploadUrl.split("?")[0]);
         setUploadedImageUrl(URL.createObjectURL(selectedFile));
       } catch (error) {
         Swal.fire({
@@ -124,28 +125,22 @@ const RegisterUser: React.FC = () => {
   ) => {
     setSubmitting(true);
     try {
-      if (editedUser && file) {
-        if (editedUser.s3Path) {
-          const deleteUrlResponse = await axios.get("/api/presignedUrl", {
-            headers: { "X-File-s3Path": encodeURIComponent(olds3Path) },
-          });
-          const { uploadUrl: deleteUrl } = deleteUrlResponse.data;
-          const response = await axios.delete(deleteUrl);
-        }
-        const newS3Path = `user/${uuidv4()}.${file.type.split("/")[1]}`;
-        const getUrlResponse = await axios.get("/api/presignedUrl", {
-          headers: { "X-File-s3Path": encodeURIComponent(newS3Path) },
-        });
-        const { uploadUrl: newUploadUrl } = getUrlResponse.data;
-        await axios.put(newUploadUrl, file, {
+      if (file) {
+        const response = await axios.put(values.uploadUrl, file, {
           headers: { "Content-Type": file.type },
         });
-
-        values.s3Path = newS3Path;
-        values.uploadUrl = newUploadUrl;
-        values.imageUrl = newUploadUrl.split("?")[0];
+        if (response.status !== 200) {
+          throw new Error("Failed to upload image");
+        }
       }
-
+      if (editedUser && file) {
+        const deleteResponse = await axios.delete("/api/s3-api/deletefile", {
+          headers: { "X-File-s3Path": encodeURIComponent(olds3Path) },
+        });
+        if (deleteResponse.status !== 200) {
+          throw new Error("Failed to delete old image");
+        }
+      }
       if (editedUser) {
         await axios.put(`/api/users/${editedUser._id}`, values);
         const updatedUsers = users.map((user) => {
@@ -209,7 +204,7 @@ const RegisterUser: React.FC = () => {
               {uploadedImageUrl ? (
                 <div>
                   <img
-                    src={uploadedImageUrl}
+                    src={uploadedImageUrl || editedUser?.imageUrl}
                     alt="Uploaded Image"
                     className="size-[100%] rounded-lg object-cover"
                   />

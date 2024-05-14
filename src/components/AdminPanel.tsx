@@ -17,13 +17,14 @@ interface UserData {
   phone: string;
   role: string;
   imageUrl: string;
+  s3Path?: string;
 }
 
 const AdminPanel = () => {
   const { users, setUsers, setEditedUser, setModalOpen, isModalOpen } =
     useContext(UserContext);
 
-  const deleteUser = async (id: string) => {
+  const deleteUser = async (user: UserData) => {
     const swalWithTailwindButtons = Swal.mixin({
       customClass: {
         confirmButton: "bg-emerald-800 text-white px-4 py-2 rounded-md mx-2",
@@ -44,7 +45,12 @@ const AdminPanel = () => {
 
     if (result.isConfirmed) {
       try {
-        console.log("Deleting user with id:", id);
+        if (user.s3Path) {
+          await axios.delete("/api/s3-api/deletefile", {
+            headers: { "X-File-s3Path": encodeURIComponent(user.s3Path) },
+          });
+        }
+        const id = user._id;
         await axios.delete(`/api/users/${id}`);
         const newUsers = users.filter((user) => user._id !== id);
         setUsers(newUsers);
@@ -169,7 +175,7 @@ const AdminPanel = () => {
                       </td>
                       <td className="px-6 py-4">
                         <MdDeleteForever
-                          onClick={() => deleteUser(user._id)}
+                          onClick={() => deleteUser(user)}
                           className="font-medium text-blue-600 dark:text-blue-500 mx-auto hover:underline cursor-pointer"
                         />
                       </td>
