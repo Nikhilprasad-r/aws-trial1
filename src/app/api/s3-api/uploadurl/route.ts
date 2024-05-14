@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import parseError from "@/app/utils/types/errorParser";
 
 export async function GET(req: Request, res: NextResponse) {
-  console.log(req);
   const s3Pathencoded = headers().get("x-file-s3Path");
   const s3Path = decodeURIComponent(s3Pathencoded as string);
   if (typeof s3Path !== "string") {

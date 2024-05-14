@@ -22,7 +22,6 @@ export async function GET(req: Request, res: NextResponse) {
       imageUrl: user.imageUrl,
       role: user.role,
     }));
-    console.log(users);
     return NextResponse.json(users, { status: 200 });
   } catch (error) {
     const message = parseError(error);
