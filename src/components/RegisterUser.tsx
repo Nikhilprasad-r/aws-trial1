@@ -34,6 +34,7 @@ const RegisterUser: React.FC = () => {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [currents3Path, setcurrentS3Path] = useState<string>("");
   const [currentImageurl, setCurrentImageUrl] = useState<string>("");
+  const [currentUploadUrl, setCurrentUploadUrl] = useState<string>("");
   const [olds3Path, setOlds3Path] = useState<string>("");
   const {
     addUser,
@@ -64,7 +65,7 @@ const RegisterUser: React.FC = () => {
     phone: editedUser?.phone || "",
     role: editedUser?.role || "",
     s3Path: editedUser?.s3Path || "",
-    uploadUrl: editedUser?.uploadUrl || "",
+    uploadUrl: "",
     imageUrl: editedUser?.imageUrl || "",
   };
 
@@ -86,9 +87,8 @@ const RegisterUser: React.FC = () => {
         const { uploadUrl } = response.data;
         setcurrentS3Path(s3Path);
         setCurrentImageUrl(uploadUrl.split("?")[0]);
-        setFieldValue("s3Path", s3Path);
-        setFieldValue("uploadUrl", uploadUrl);
         setFieldValue("imageUrl", uploadUrl.split("?")[0]);
+        setCurrentUploadUrl(uploadUrl);
         setUploadedImageUrl(URL.createObjectURL(selectedFile));
       } catch (error: any) {
         errorAlert(error.response?.data.error || error.message);
@@ -102,14 +102,15 @@ const RegisterUser: React.FC = () => {
     values: RegisterUserFormValues,
     { resetForm, setSubmitting }: FormikHelpers<RegisterUserFormValues>
   ) => {
-    values.s3Path = currents3Path || "";
-    values.imageUrl = currentImageurl || "";
     setSubmitting(true);
     try {
       if (file) {
-        const response = await axios.put(values.uploadUrl, file, {
+        const response = await axios.put(currentUploadUrl, file, {
           headers: { "Content-Type": file.type },
         });
+
+        values.s3Path = currents3Path || "";
+        values.imageUrl = currentImageurl || "";
         if (response.status !== 200) {
           throw new Error("Failed to upload image");
         }
