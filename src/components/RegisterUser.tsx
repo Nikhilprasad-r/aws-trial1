@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, ChangeEvent, useEffect, useContext } from "react";
 import axios from "axios";
 import { Formik, Form, Field, FormikHelpers } from "formik";
@@ -8,7 +9,7 @@ import { RiImageEditFill } from "react-icons/ri";
 import { UserContext } from "@/context/UserContext";
 import { FaUserCheck } from "react-icons/fa6";
 import { v4 as uuidv4 } from "uuid";
-import { RegisterUserFormValues } from "@/app/utils/types/user.d";
+import { RegisterUserFormValues } from "@/app/utils/types/user";
 import { errorAlert, successAlert } from "./ui/sweetalert";
 import Loader from "./ui/Loader";
 
@@ -31,6 +32,8 @@ const RegisterUserSchema = Yup.object().shape({
 const RegisterUser: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [currents3Path, setcurrentS3Path] = useState<string>("");
+  const [currentImageurl, setCurrentImageUrl] = useState<string>("");
   const [olds3Path, setOlds3Path] = useState<string>("");
   const {
     addUser,
@@ -48,6 +51,8 @@ const RegisterUser: React.FC = () => {
     if (editedUser) {
       setUploadedImageUrl(editedUser.imageUrl || null);
       setOlds3Path(editedUser.s3Path || "");
+      setcurrentS3Path(editedUser.s3Path || "");
+      setCurrentImageUrl(editedUser.imageUrl || "");
     }
   }, [editedUser]);
 
@@ -79,6 +84,8 @@ const RegisterUser: React.FC = () => {
           headers: { "X-File-s3Path": encodeURIComponent(s3Path) },
         });
         const { uploadUrl } = response.data;
+        setcurrentS3Path(s3Path);
+        setCurrentImageUrl(uploadUrl.split("?")[0]);
         setFieldValue("s3Path", s3Path);
         setFieldValue("uploadUrl", uploadUrl);
         setFieldValue("imageUrl", uploadUrl.split("?")[0]);
@@ -95,6 +102,8 @@ const RegisterUser: React.FC = () => {
     values: RegisterUserFormValues,
     { resetForm, setSubmitting }: FormikHelpers<RegisterUserFormValues>
   ) => {
+    values.s3Path = currents3Path || "";
+    values.imageUrl = currentImageurl || "";
     setSubmitting(true);
     try {
       if (file) {
@@ -105,7 +114,7 @@ const RegisterUser: React.FC = () => {
           throw new Error("Failed to upload image");
         }
       }
-      if (editedUser && file) {
+      if (editedUser?.s3Path && file) {
         const deleteResponse = await axios.delete("/api/s3-api/deletefile", {
           headers: { "X-File-s3Path": encodeURIComponent(olds3Path) },
         });

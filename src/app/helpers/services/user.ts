@@ -44,7 +44,7 @@ export const deleteUser = async (id: string) => {
   return response;
 };
 export const updateUser = async (id: string, data: Partial<UserDataType>) => {
-  const { firstname, lastname, email, phone, role } = data;
+  const { firstname, lastname, email, phone, role, s3Path, imageUrl } = data;
   const update = {
     $set: {
       ...(firstname && { firstname }),
@@ -52,6 +52,8 @@ export const updateUser = async (id: string, data: Partial<UserDataType>) => {
       ...(email && { email }),
       ...(phone && { phone }),
       ...(role && { role }),
+      ...(s3Path && { s3Path }),
+      ...(imageUrl && { imageUrl }),
     },
   };
 
