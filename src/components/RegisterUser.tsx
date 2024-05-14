@@ -9,18 +9,7 @@ import { UserContext } from "@/context/UserContext";
 import { FaUserCheck } from "react-icons/fa6";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
-
-interface RegisterUserFormValues {
-  _id: string;
-  firstname: string;
-  lastname: string;
-  email: string;
-  phone: string;
-  role: string;
-  s3Path: string;
-  uploadUrl: string;
-  imageUrl: string;
-}
+import { RegisterUserFormValues } from "@/app/utils/types/user.d";
 
 const RegisterUserSchema = Yup.object().shape({
   firstname: Yup.string()

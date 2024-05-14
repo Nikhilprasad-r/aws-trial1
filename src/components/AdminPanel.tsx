@@ -8,17 +8,7 @@ import { TbPasswordUser } from "react-icons/tb";
 import { FaUserPlus } from "react-icons/fa";
 import RegisterUser from "./RegisterUser";
 import Swal from "sweetalert2";
-
-interface UserData {
-  _id: string;
-  firstname: string;
-  lastname: string;
-  email: string;
-  phone: string;
-  role: string;
-  imageUrl: string;
-  s3Path?: string;
-}
+import { UserData } from "@/app/utils/types/user.d";
 
 const AdminPanel = () => {
   const { users, setUsers, setEditedUser, setModalOpen, isModalOpen } =
