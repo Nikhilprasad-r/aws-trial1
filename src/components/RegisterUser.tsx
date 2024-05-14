@@ -1,11 +1,5 @@
 "use client";
-import React, {
-  useState,
-  ChangeEvent,
-  FormEvent,
-  useEffect,
-  useContext,
-} from "react";
+import React, { useState, ChangeEvent, useEffect, useContext } from "react";
 import axios from "axios";
 import { Formik, Form, Field, FormikHelpers } from "formik";
 import * as Yup from "yup";
@@ -27,15 +21,7 @@ interface RegisterUserFormValues {
   uploadUrl: string;
   imageUrl: string;
 }
-interface UserData {
-  _id: string;
-  firstname: string;
-  lastname: string;
-  email: string;
-  phone: string;
-  role: string;
-  imageUrl: string;
-}
+
 const RegisterUserSchema = Yup.object().shape({
   firstname: Yup.string()
     .min(2, "Too Short!")
@@ -66,16 +52,16 @@ const RegisterUser: React.FC = () => {
     setModalOpen,
     users,
   } = useContext(UserContext);
+
   useEffect(() => {
-    if (editedUser && editedUser.imageUrl) {
-      setUploadedImageUrl(editedUser.imageUrl);
-    }
-    if (editedUser && editedUser.s3Path) {
-      console.log(editedUser.s3Path);
-      setOlds3Path(editedUser.s3Path);
+    if (editedUser) {
+      setUploadedImageUrl(editedUser.imageUrl || null);
+      setOlds3Path(editedUser.s3Path || "");
     }
   }, [editedUser]);
+
   const initialValues: RegisterUserFormValues = {
+    _id: editedUser?._id || "",
     firstname: editedUser?.firstname || "",
     lastname: editedUser?.lastname || "",
     email: editedUser?.email || "",
@@ -84,8 +70,8 @@ const RegisterUser: React.FC = () => {
     s3Path: editedUser?.s3Path || "",
     uploadUrl: editedUser?.uploadUrl || "",
     imageUrl: editedUser?.imageUrl || "",
-    _id: editedUser?._id || "",
   };
+
   const handleFileChange = async (
     setFieldValue: FormikHelpers<RegisterUserFormValues>["setFieldValue"],
     event: ChangeEvent<HTMLInputElement>
@@ -143,12 +129,9 @@ const RegisterUser: React.FC = () => {
       }
       if (editedUser) {
         await axios.put(`/api/users/${editedUser._id}`, values);
-        const updatedUsers = users.map((user) => {
-          if (user._id === editedUser._id) {
-            return { ...user, ...values };
-          }
-          return user;
-        });
+        const updatedUsers = users.map((user) =>
+          user._id === editedUser._id ? { ...user, ...values } : user
+        );
         setUsers(updatedUsers);
       } else {
         const response = await axios.post("/api/signup", values);
@@ -156,7 +139,6 @@ const RegisterUser: React.FC = () => {
         values._id = userId;
         addUser(values);
       }
-
       Swal.fire({
         title: "Success!",
         text: "User updated successfully",
@@ -181,7 +163,7 @@ const RegisterUser: React.FC = () => {
     <div
       className={`fixed top-0 right-0 left-0 z-50 flex items-center justify-center w-full h-full ${
         isModalOpen
-          ? "text-black visible opacity-100 ease-in inset-0  bg-black/70"
+          ? "text-black visible opacity-100 ease-in inset-0 bg-black/70"
           : "invisible opacity-0 ease-out"
       } transition-all duration-100`}
     >
@@ -191,7 +173,7 @@ const RegisterUser: React.FC = () => {
         onSubmit={handleSubmit}
       >
         {({ setFieldValue }) => (
-          <Form className="max-w-md mx-auto  bg-gray-700 p-5  rounded-lg">
+          <Form className="max-w-md mx-auto bg-gray-700 p-5 rounded-lg">
             <div className="flex justify-end py-3 text-red-600 text-2xl">
               <IoMdClose
                 onClick={() => {
@@ -268,7 +250,7 @@ const RegisterUser: React.FC = () => {
               />
               <label
                 htmlFor="email"
-                className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
+                className="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6"
               >
                 Email address
               </label>
